@@ -7,6 +7,11 @@ import * as nodemailer from 'nodemailer';
 import Mail from 'nodemailer/lib/mailer';
 import SMTPTransport from 'nodemailer/lib/smtp-transport';
 
+const Telegram = require('telegraf/telegram');
+
+const telegramUserNotificationId = process.env.TELEGRAM_RECIPIENT_ID;
+const telegram = new Telegram(process.env.TELEGRAM_BOT_TOKEN);
+
 const smtpTransportOptions: SMTPTransport.Options = {
   host: process.env.SMTP_HOSTNAME,
   port: parseInt(process.env.SMTP_PORT || '25'),
@@ -118,6 +123,7 @@ function writeState(state: any) {
   ]
 
   // fire up browser
+  // const browser = await playwright['chromium'].launch({executablePath: '/snap/bin/chromium'});
   const browser = await playwright['chromium'].launch();
   const context = await browser.newContext();
 
@@ -143,6 +149,7 @@ function writeState(state: any) {
       if (selectorValue != originalValue && originalValue != "") {
         console.log(`A value changed! ${check.website} has changed value from ${originalValue} to ${selectorValue}`);
         sendMail("Website-checker: Change detected", `<h1>A value changed!</h1><p>${check.website} has changed value from ${originalValue} to ${selectorValue}</p>`);
+        telegram.sendMessage(telegramUserNotificationId, `A value changed! ${check.website} has changed value from ${originalValue} to ${selectorValue}`);
       }
       check.value = selectorValue;
       check.errorCount = 0;
@@ -150,6 +157,7 @@ function writeState(state: any) {
       if (originalErrorCount >= MAX_ERROR_COUNT) {
         console.log(`Checks for ${check.website} are working again`);
         sendMail(`Website-checker: Back to normal`, `<p>Checks for ${check.website} are working again</p>`);
+        telegram.sendMessage(telegramUserNotificationId, `Checks for ${check.website} are working again`);
       }
 
     } catch (Error) {
@@ -158,6 +166,7 @@ function writeState(state: any) {
 
       if (check.errorCount == MAX_ERROR_COUNT) {
         sendMail(`Website-checker: Error occured ${MAX_ERROR_COUNT} times`, `<p>Error count for ${check.website} reached ${MAX_ERROR_COUNT}</p>`);
+        telegram.sendMessage(telegramUserNotificationId, `Error count for ${check.website} reached ${MAX_ERROR_COUNT}`);
       }
     }
   }
